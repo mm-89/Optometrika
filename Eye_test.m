@@ -49,6 +49,8 @@ classdef Eye_test < Bench
 
         image = [];
         
+        elem_n = zeros(1, 2); % 1 : lens1; 2 : lens2;
+        
     end
     
     methods
@@ -71,8 +73,15 @@ classdef Eye_test < Bench
             %self.cnt = self.cnt + 1;
             %self.elem{ self.cnt } = pupil;
             
-            % lens
-            % caluclate lens dimensions from its diameter assuming constant volume
+            lens1 = Lens( [ self.Lens1x 0 0 ], self.Lens1D, self.Lens1R, self.Lens1k, { 'aqueous' 'lens' } );
+            self.cnt = self.cnt + 1;
+            self.elem{ self.cnt } = lens1;
+            self.elem_n( 1 ) = self.cnt;
+            
+            lens2 = Lens( [ self.Lens2x 0 0 ], self.Lens2D, self.Lens2R, self.Lens2k, { 'lens' 'vitreous' } );
+            self.cnt = self.cnt + 1;
+            self.elem{ self.cnt } = lens2;
+            self.elem_n( 2 ) = self.cnt;
             
             % retina
             retina = Retina( [ self.Retinax 0 0 ], self.RetinaR, self.Retinak );
@@ -80,11 +89,12 @@ classdef Eye_test < Bench
             self.cnt = self.cnt + 1;            
             self.elem{ self.cnt } = retina;
             self.image = retina.image;
+                        
         end
                 
         function self = spec_eye(self, D, A)
             % D diopters
-            % A subject age
+            % A age
             
             self.Lens1R = 1/(1/(12.7 - 0.058*A) + 0.0077*D);
             self.Lens1k = -2.8 +0.025*A - 0.0013*A*A - 0.25*D;
@@ -93,12 +103,12 @@ classdef Eye_test < Bench
             self.Lens2k = 0.1 - 0.06*A;
             self.Lens2x = self.Lens1x + 2.93 + 0.0236*A +D*(0.058 - 0.0005*A);
             
+            % update lenses
             lens1 = Lens( [ self.Lens1x 0 0 ], self.Lens1D, self.Lens1R, self.Lens1k, { 'aqueous' 'lens' } );
-            self.cnt = self.cnt + 1;
-            self.elem{ self.cnt } = lens1;
+            self.elem{ self.elem_n( 1 ) } = lens1;
+            
             lens2 = Lens( [ self.Lens2x 0 0 ], self.Lens2D, self.Lens2R, self.Lens2k, { 'lens' 'vitreous' } );
-            self.cnt = self.cnt + 1;
-            self.elem{ self.cnt } = lens2;
+            self.elem{ self.elem_n( 2 ) } = lens2;
             
         end
 
