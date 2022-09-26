@@ -323,9 +323,16 @@ classdef Bench < handle
             end
             rays( 1, self.cnt + 1 ) = Rays; % allocate cnt instances of Rays
             rays( 1 ) = rays_in;
+            
+            %distances = zeros( size(rays_in.r, 1), self.cnt);
+            
             for i = 1 : self.cnt % loop through the optic system
-                rays( i + 1 ) = rays( i ).interaction( self.elem{ i }, out_fl );
+                
+                rays( i + 1 ) = rays( i ).interaction( self.elem{ i }, out_fl );  
+                rays( i + 1 ).I = rays( i + 1 ).I ./ (sqrt(sum((rays( i + 1 ).r - rays( i ).r).^2,2)) + 1).^2;
+                
             end
+            
         end
     end
     
