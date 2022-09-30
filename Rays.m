@@ -1,3 +1,4 @@
+
 classdef Rays
     % RAYS Implements a ray bundle
     % Note that for easy copying Rays doesn't inherit from handle
@@ -737,12 +738,35 @@ classdef Rays
         end
          
         
-        function rays_out = interaction( self, surf, out_fl )
+        function rays_out = interaction( self, surf, out_fl, trans )
             % INTERACTION calculates rays properties after interacting with
             % a Surface
             
             % find intersections and set outcoming rays starting points
             [ rays_out, nrms ] = self.intersection( surf );
+            
+            if trans == 1
+                % transmittance file contains data from Boettner (1967),
+                % i.e. percentage transmission of each component of human
+                % eye. Columns in the file are:
+                %   1- wavelenght
+                %   2- cornea
+                %   3- aqueous
+                %   4- lens
+                %   5- vitreous
+                s = load('transmittance.mat').transmittance;
+                w_user = rays_out.w( 1 ) * 10.^9; % wavelenght from user
+                
+                % percentage transmission for each element at wavelenght
+                % w_user. Interpolation is needed for extra values
+                p_r_corn = interp1(s( : , 1 ), s( :, 2 ), w_user) ./ 100;
+                p_r_aque = interp1(s( : , 1 ), s( :, 3 ), w_user) ./ 100;
+                p_r_lens = interp1(s( : , 1 ), s( :, 4 ), w_user) ./ 100;
+                p_r_vitr = interp1(s( : , 1 ), s( :, 5 ), w_user) ./ 100;
+                
+                % array with all values
+                trans_w_user = [p_r_corn p_r_aque p_r_lens p_r_vitr];
+            end
             
             miss = rays_out.I < 0; % indices of the rays
 %             opposite = dot( self.n, nrms, 2 ) < 0;
@@ -802,11 +826,12 @@ classdef Rays
                         rays_out.n = repmat( rn, 1, 3 ) .* self.n - repmat( rn .* cs1 - sign( cs1 ) .* cs2, 1, 3 ) .* nrms; % refracted direction
                         tmp = cs1;
                         cs1( opp_rays ) = -cs1( opp_rays );
-                        
+                                    
                         % calculate transmitted intensity (Fresnel formulas)
                         rs = ( rn .* cs1 - cs2 ) ./ ( rn .* cs1 + cs2 );
                         rp = ( cs1 - rn .* cs2 ) ./ ( cs1 + rn .* cs2 );
                         refraction_loss = ( abs( rs ).^2 + abs( rp ).^2 ) / 2;
+                        
                         % handle total internal reflection
                         tot = imag( cs2 ) ~= 0;
                         % rays_out.n( tot, : ) = 0; % zero direction for such rays
@@ -814,6 +839,20 @@ classdef Rays
                         refraction_loss( tot ) = 0; %1;
                         rays_out.nrefr( tot ) = refrindx( self.w( tot ), med1 ); % refractive index before the surface
                         rays_out.I( ~miss ) = ( 1 - refraction_loss( ~miss ) ) .* rays_out.I( ~miss ); % intensity of the outcoming rays
+                        
+                        if trans == 1
+                            if strcmp(surf.glass( 1 ), 'cornea')
+                                    rays_out.I( ~miss ) = trans_w_user( 1 ) .* rays_out.I( ~miss );
+                            elseif strcmp(surf.glass( 1 ), 'aqueous')
+                                    rays_out.I( ~miss ) = trans_w_user( 2 ) .* rays_out.I( ~miss );
+                            elseif strcmp(surf.glass( 1 ), 'lens')
+                                    rays_out.I( ~miss ) = trans_w_user( 3 ) .* rays_out.I( ~miss );
+                            elseif strcmp(surf.glass( 1 ), 'vitreous')
+                                    rays_out.I( ~miss ) = trans_w_user( 4 ) .* rays_out.I( ~miss );      
+                            end
+                        end
+              
+                        
                     end                     
                 otherwise
                     error( [ 'Surface ' class( surf ) ' is not defined!' ] );

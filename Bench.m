@@ -308,31 +308,37 @@ classdef Bench < handle
             end
         end
        
-        function rays = trace( self, rays_in, out_fl )
+        function rays = trace( self, rays_in, out_fl, trans)
             % rays_through = b.trace( rays_in, out_fl ) - trace rays through optical elements
             % on the bench b
             % INPUT:
             %   rays_in - incoming rays, e.g., created by the Rays() function
             %   out_fl  - 0 include even rays that missed some elements on the
             %   bench,  - 1 (default) exlude such rays
+            %   trans   - 0 (only for eye) exclude calculation of transmittance
+            %           - 1 (only for eye) calculate transmittance in eye
+            %           intensity
+            
             % OUTPUT:
             %   rays_through - a cell array of refracted/reflected rays of the same
             %   length as the number of optical elements on the bench.
             if nargin < 3
                 out_fl = 1; % exclude rays which miss elements of the bench
             end
-            rays( 1, self.cnt + 1 ) = Rays; % allocate cnt instances of Rays
-            rays( 1 ) = rays_in;
             
-            %distances = zeros( size(rays_in.r, 1), self.cnt);
-            
-            for i = 1 : self.cnt % loop through the optic system
-                
-                rays( i + 1 ) = rays( i ).interaction( self.elem{ i }, out_fl );  
-                rays( i + 1 ).I = rays( i + 1 ).I ./ (sqrt(sum((rays( i + 1 ).r - rays( i ).r).^2,2)) + 1).^2;
-                
+            if nargin < 4
+                trans = 0; % exclude calculation of transmittance (only for eye)
             end
             
+            rays( 1, self.cnt + 1 ) = Rays; % allocate cnt instances of Rays
+            rays( 1 ) = rays_in;
+      
+            for i = 1 : self.cnt % loop through the optic system
+                
+                rays( i + 1 ) = rays( i ).interaction( self.elem{ i }, out_fl, trans );  
+                %rays( i + 1 ).I = rays( i + 1 ).I ./ (sqrt(sum((rays( i + 1 ).r - rays( i ).r).^2,2)) + 1).^2;
+            end
+                        
         end
     end
     
