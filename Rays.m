@@ -268,7 +268,7 @@ classdef Rays
                     error( 'Hemisphere bundle pattern requires Source bundle geometry!' );
                  end
 
-                theta = acos( 2 * rand(cnt, 1) - 1 );
+                theta = acos( rand(cnt, 1) );
                 phi = 2 * pi * rand(cnt, 1);
                                 
                 x = sin( theta ) .* cos( phi );
@@ -280,9 +280,7 @@ classdef Rays
                 self.cnt = size( self.n, 1 );
                 self.r = repmat( pos, self.cnt, 1 );
                 
-                if norm( ax ) ~= 0
-                    self.n = rodrigues_rot( self.n, ax, asin( norm( ax ) ) );
-                end
+                self.n = rodrigues_rot( self.n, [ 0 1 0 ], pi / 2 );
                 
             else
                 error( [ 'Ray arrangement flag ' rflag ' is not defined!' ] );
