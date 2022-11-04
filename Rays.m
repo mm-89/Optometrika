@@ -98,6 +98,7 @@ classdef Rays
         n = []; % a matrix of ray directions
         w = [];  % a vector of ray wavelengths
         I = [];         % a vector of ray intensities
+        nrm = []; % a vector of normals
         nrefr = [];    % a vector of current refractive indices
         att = [];       % a vector of ray attenuations
         color = [];   % color to draw the bundle rays
@@ -267,7 +268,7 @@ classdef Rays
                  if ~strcmp( geometry, 'source' )
                     error( 'Hemisphere bundle pattern requires Source bundle geometry!' );
                  end
-
+                 
                 theta = acos( rand(cnt, 1) );
                 phi = 2 * pi * rand(cnt, 1);
                                 
@@ -325,14 +326,17 @@ classdef Rays
                 self.color = repmat( self.color, self.cnt, 1 );
             end
             self.nrefr = refrindx( self.w, glass );
+            % light rays are initialized with intensity '1' 
             self.I = ones( self.cnt, 1 );
             if strcmp( geometry, 'source-Lambert' )
                 self.I = self.I .* self.n( :, 1 ); % Lambertian source: I proportional to cos wrt source surface normal assumed to be [ 1 0 0 ]
             end
             
+            % consider a plane perpendicular to z axis
+            self.nrm = repmat( [ 1 0 0 ], self.cnt, 1);
+            
             self.att = ones( self.cnt, 1 );
-        end
-        
+        end     
             
         function draw( self, scale )
             if nargin == 0 || isempty( scale )
@@ -763,7 +767,8 @@ classdef Rays
             
             % find intersections and set outcoming rays starting points
             [ rays_out, nrms ] = self.intersection( surf );
-            
+            rays_out.nrm = nrms;
+               
             if trans == 1
                 % transmittance file contains data from Boettner (1967),
                 % i.e. percentage transmission of each component of human
