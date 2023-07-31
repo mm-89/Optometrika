@@ -308,7 +308,7 @@ classdef Bench < handle
             end
         end
        
-        function rays = trace( self, rays_in, out_fl, trans)
+        function [rays, dist] = trace( self, rays_in, out_fl, trans)
             % rays_through = b.trace( rays_in, out_fl ) - trace rays through optical elements
             % on the bench b
             % INPUT:
@@ -322,6 +322,8 @@ classdef Bench < handle
             % OUTPUT:
             %   rays_through - a cell array of refracted/reflected rays of the same
             %   length as the number of optical elements on the bench.
+            %   dist - a matrix of distances between two continuous optical
+            %   surfaces
             if nargin < 3
                 out_fl = 1; % exclude rays which miss elements of the bench
             end
@@ -332,11 +334,12 @@ classdef Bench < handle
             
             rays( 1, self.cnt + 1 ) = Rays; % allocate cnt instances of Rays
             rays( 1 ) = rays_in;
+            
+            dist = zeros( size(rays_in.I, 1), self.cnt ); % matrix of distances
       
-            for i = 1 : self.cnt % loop through the optic system
-                
+            for i = 1 : self.cnt % loop through the optic system             
                 rays( i + 1 ) = rays( i ).interaction( self.elem{ i }, out_fl, trans );  
-                %rays( i + 1 ).I = rays( i + 1 ).I ./ (sqrt(sum((rays( i + 1 ).r - rays( i ).r).^2,2)) + 1).^2;
+                dist( : , i ) = sqrt(sum((rays( i + 1 ).r - rays( i ).r).^2,2));
             end
                         
         end
