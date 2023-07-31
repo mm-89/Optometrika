@@ -11,6 +11,7 @@ classdef Screen < Surface
     % h - height
     % wbins - number of bins in the horizontal direction
     % hbins - number of bins in the vertical direction
+    % binArea - area (in mm2) of each screen's bin
     % OUTPUT:
     % p - screen object
     %
@@ -32,6 +33,7 @@ classdef Screen < Surface
         hbins = 128; % number of bins along y-axis
         wbins = 128; % number of bins along x-axis
         image = []; % image on the screen
+        binArea = 1; % default area for each bean (in mm2)
     end
     
     methods
@@ -46,6 +48,7 @@ classdef Screen < Surface
             self.w = aw;
             self.hbins = round( ahbins );
             self.wbins = round( awbins );
+            self.binArea = ( self.w/self.wbins ) * ( self.h/self.hbins );
         end
         
         function display( self )
@@ -66,8 +69,19 @@ classdef Screen < Surface
             fprintf( 'Rotation angle:\t %.3f\n',  self.rotang );
         end
         
-        function hndl = draw( self, color )
+        function hndl = draw( self, intens, inter_points, color )
+            
             if nargin < 2
+                intens = 1; % it is just a counting
+            else 
+                % only the mean intensity for simplicity
+                intens = intens( intens~=0 );
+                intens = mean( intens );
+            end
+            if nargin < 3
+                inter_points = 0; % must be set
+            end
+            if nargin < 4
                 color = [ .2 .2 .2 1 ];
             end
             % draw self
@@ -102,11 +116,32 @@ classdef Screen < Surface
             else
                 c = self.image;
             end
-            c = flipud( c ); % to get from image to matrix form
-            c = fliplr( c ); % because y-axis points to the left
-            hndl = surf( x, y, z, c, 'EdgeColor', 'none', 'FaceLighting','phong', 'FaceColor', 'interp', ...
-                'AmbientStrength', 0., 'SpecularStrength', 0 ); % dull
-            colormap summer;
+            
+            %c = flipud( c ); % to get from image to matrix form
+            %c = fliplr( c ); % because y-axis points to the left
+            %hndl = surf(x, y, z, c, 'EdgeColor', 'none', 'FaceLighting','phong', 'FaceColor', 'interp', ...
+            %    'AmbientStrength', 0., 'SpecularStrength', 0 ); % dull
+            %colormap winter;
+            %colorbar;
+            %xlabel('y');
+            %zlabel('z');
+            
+            a = linspace( -self.w/2, self.w/2, self.wbins );
+            b = linspace( -self.h/2, self.h/2, self.hbins );
+            
+            hhh = histogram2(inter_points(:, 2), inter_points(:, 3), a, b, ...
+                'DisplayStyle','tile','ShowEmptyBins','on');     
+            
+            [X, Y] = meshgrid(-self.w/2:self.w/(self.wbins - 2):self.w/2,-self.h/2:self.h/(self.hbins- 2):self.w/2);
+            sc = surfc(X, Y, hhh.Values*intens/self.binArea);
+            colormap('cool');
+            clb = colorbar;
+            clb.Title.String = "Irradiance [W/mm2]";
+            xlabel("position [mm]")
+            ylabel("position [mm]")
+            zlabel("irradiance [W/mm2]")
+                                              
+           
         end
         
     end
